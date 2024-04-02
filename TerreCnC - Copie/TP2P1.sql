@@ -118,8 +118,32 @@ END;
 --Vous devez également supprimer les réservations, les commentaires et les photos associées à
 --cette annonce.
 
+CREATE OR REPLACE PROCEDURE SUPPRIMER_ANNONCE_PROC(in_annonceid IN cnc.annonces.annonceid%TYPE)
+IS
+BEGIN
+    DELETE FROM cnc.reservations r WHERE r.annonceid = in_annonceid;
+    
+    DELETE FROM cnc.commentaires c WHERE c.annonceid = in_annonceid;
+    
+    DELETE FROM cnc.utilisateurs_annonces u WHERE u.annonceid = in_annonceid;
+    
+    DELETE FROM cnc.photos p where p.annonceid = in_annonceid;
+    
+    DELETE FROM cnc.annonces a WHERE a.annonceid = in_annonceid; 
+    
+    COMMIT;
+    
+    DBMS_OUTPUT.PUT_LINE('Annonce supprimée avec succès.');
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('Erreur lors de la suppression de l''annonce: ' || SQLERRM);
+END SUPPRIMER_ANNONCE_PROC;
 
 
+BEGIN
+    SUPPRIMER_ANNONCE_PROC(1);
+END;
 
 --Q6_RESERVER
 --Cette procédure prend en paramètre l’id d’une annonce, une date de début, une date de fin
