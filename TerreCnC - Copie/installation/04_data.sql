@@ -27,31 +27,31 @@ INSERT INTO Utilisateurs (UtilisateurID, Nom, Prenom, Email, MotDePasse) VALUES
 (9, 'Lefebvre', 'Jacques', 'jacques@example.com', 'motdepasse9');
 
 -- Insertion des données dans la table Annonces
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (1, 1, 'Charmant appartement près du Vieux-Québec', 'Appartement lumineux avec vue sur la ville, à quelques pas des principales attractions touristiques.', 100, 'Vieux-Québec, Québec', TO_DATE('2024-03-17', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (2, 2, 'Maison de caractère avec jardin en plein cœur de la ville', 'Maison spacieuse et confortable idéale pour les familles, à proximité des parcs et des commerces.', 150, 'Saint-Roch, Québec', TO_DATE('2024-03-17', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (3, 3, 'Studio moderne avec terrasse privée', 'Studio entièrement équipé dans un quartier calme mais proche de toutes les commodités.', 80, 'Limoilou, Québec', TO_DATE('2024-03-17', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (4, 4, 'Condo de luxe avec vue imprenable sur le fleuve', 'Condo haut de gamme avec toutes les commodités modernes et une vue panoramique sur le fleuve Saint-Laurent.', 200, 'Levis, Québec', TO_DATE('2024-03-18', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (5, 5, 'Appartement cosy au cœur du centre-ville', 'Appartement rénové avec goût, à proximité des restaurants et des boutiques du centre-ville.', 120, 'Sainte-Foy, Québec', TO_DATE('2024-03-18', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (6, 6, 'Maison chaleureuse avec jardin et piscine', 'Maison idéale pour les vacances en famille, avec un grand jardin et une piscine privée.', 180, 'Beauport, Québec', TO_DATE('2024-03-18', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (7, 7, 'Studio en plein cœur du quartier historique', 'Studio confortable à proximité des sites historiques et des restaurants.', 90, 'Vieux-Port, Québec', TO_DATE('2024-03-19', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (8, 8, 'Appartement moderne avec vue sur la rivière', 'Appartement élégant avec balcon offrant une vue panoramique sur la rivière Saint-Charles.', 130, 'Saint-Roch, Québec', TO_DATE('2024-03-19', 'YYYY-MM-DD'));
 
-INSERT INTO Annonces (AnnonceID, AuteurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
+INSERT INTO Annonces (AnnonceID, UtilisateurID, Titre, Description, PrixParNuit, Localisation, DateCreation) VALUES 
 (9, 9, 'Chalet rustique au bord du lac', 'Chalet pittoresque niché au bord d''un lac tranquille, idéal pour une escapade relaxante en nature.', 160, 'Lac-Beauport, Québec', TO_DATE('2024-03-20', 'YYYY-MM-DD'));
 
 -- Insertion des données dans la table Reservations
