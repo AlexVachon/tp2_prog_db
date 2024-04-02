@@ -68,6 +68,10 @@ BEGIN
     SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = in_id_annonce;
 
     interval_jour := in_date_fin - in_date_debut;
+    
+    if interval_jour < 0 then
+        RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas être antérieure à la date de début.');
+    end if;
 
     FOR i IN 1..interval_jour LOOP
         prix_total := prix_total + prix_par_nuit + (frais_nettoyage * in_nombre);
@@ -81,15 +85,20 @@ BEGIN
     END LOOP;
     
     RETURN prix_total;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur: ' || SQLERRM);
+        RETURN NULL;
 END CALCULER_TOTAL_FCT;
 
 
 DECLARE
     montant_total NUMBER;
 BEGIN
-    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-05', 'YYYY-MM-DD'), 2);
+    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-02', 'YYYY-MM-DD'), 2);
     
-    DBMS_OUTPUT.PUT_LINE('Montant total: ' || montant_total || "$");
+    DBMS_OUTPUT.PUT_LINE('Montant total: ' || montant_total || '$');
 END;
 
 
