@@ -85,10 +85,10 @@ end;
 --          par nuit, jusqu’à un minimum de 5$.
 
 CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
-    in_id_annonce IN cnc.annonces.annonceid%TYPE,
-    in_date_debut IN DATE,
-    in_date_fin IN DATE,
-    in_nombre IN INT
+    i_id_annonce IN cnc.annonces.annonceid%TYPE,
+    i_date_debut IN DATE,
+    i_date_fin IN DATE,
+    i_nombre IN INT
 ) RETURN NUMBER IS
     prix_total NUMBER := 0;
     prix_par_nuit cnc.annonces.prixparnuit%TYPE;
@@ -96,19 +96,19 @@ CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
     frais_nettoyage NUMBER := 20;
     i NUMBER;
 BEGIN
-    SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = in_id_annonce;
+    SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = i_id_annonce;
 
-    interval_jour := in_date_fin - in_date_debut;
+    interval_jour := i_date_fin - i_date_debut;
     
     if interval_jour < 0 then
         RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas être antérieure à la date de début.');
     end if;
 
     FOR i IN 1..interval_jour LOOP
-        prix_total := prix_total + prix_par_nuit + (frais_nettoyage * in_nombre);
+        prix_total := prix_total + prix_par_nuit + (frais_nettoyage * i_nombre);
 
         IF i > 2 THEN
-            frais_nettoyage := frais_nettoyage - (2 * in_nombre);
+            frais_nettoyage := frais_nettoyage - (2 * i_nombre);
             IF frais_nettoyage < 5 THEN
                 frais_nettoyage := 5;
             END IF;
@@ -189,6 +189,50 @@ END;
 --Le montant total de la réservation doit-être calculé via la fonction Q3_CALCULER_TOTAL.
 --Le statut de la réservation doit-être ‘En attente’.
 
+
+CREATE OR REPLACE PROCEDURE RESERVER_PROC(
+    i_annonceid IN cnc.annonces.annonceid%TYPE, 
+    i_date_debut IN DATE, 
+    i_date_fin IN DATE,
+    i_nombre IN INT
+)
+IS
+    rec_disponible BOOLEAN;
+    rec_prix number;
+BEGIN
+    rec_disponible := ANNONCE_DISPONIBLE_FCT(i_annonceid, i_date_debut, i_date_fin);
+    
+    IF rec_disponible THEN
+        DBMS_OUTPUT.PUT_LINE('Aucune reservation en conflit');
+        rec_prix := CALCULER_TOTAL_FCT(i_annonceid, i_date_debut, i_date_fin, i_nombre);
+        
+        DBMS_OUTPUT.PUT_LINE(rec_prix);
+        
+        INSERT INTO cnc.reservations (utilisateurid, annonceid, datedebut, datefin, statut, montanttotal) 
+        VALUES (null, i_annonceid, i_date_debut, i_date_fin, 'En attente', rec_prix);
+        
+        DBMS_OUTPUT.PUT_LINE('Réservation enregistrée!');
+
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Les dates rentrent en conflit avec une autre réservation.');
+
+    END IF;
+    
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('Erreur lors de la réservation: ' || SQLERRM);
+END RESERVER_PROC;
+
+
+BEGIN
+    RESERVER_PROC(
+        1 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD'), 2
+    );
+END;
+
+select * from cnc.reservations r where r.datedebut =  TO_DATE('2024-04-01', 'YYYY-MM-DD') and r.datefin = TO_DATE('2024-04-29', 'YYYY-MM-DD') and r.annonceid = 1;
 
 
 --Q7_AFFICHER_CONVERSATION
