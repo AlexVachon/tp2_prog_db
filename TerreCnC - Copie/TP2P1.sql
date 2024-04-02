@@ -41,6 +41,30 @@ END;
 --Elle devra valider si l’annonce est disponible ou non pour la plage horaire passée en paramètre
 --et retourner un booléen.
 
+CREATE OR REPLACE FUNCTION ANNONCE_DISPONIBLE_FCT(i_annonce in cnc.annonces.id%type, i_date_debut in cnc.reservations.date%type, i_date_fin in cnc.reservations.date%type)
+RETURN BOOLEAN is rec_user cnc.annonces%rowtype;
+
+BEGIN
+    select
+        a.ANNONCEID,
+        a.TITRE,
+        a.DESCRIPTION,
+        r.RESERVATIONID,
+        r.ANNONCEID,
+        r.DATEDEBUT,
+        r.DATEFIN,
+        r.STATUT
+    into rec_user from cnc.annonces a inner join cnc.reservations r on a.ANNONCEID = r.ANNONCEID
+    where a.ANNONCEID = i_annonce
+    and i_date_debut not between r.DATEDEBUT and r.DATEFIN
+    and i_date_fin not between r.DATEDEBUT and r.DATEFIN;
+    
+    IF rec_user is null then
+        return TRUE;
+    ELSE
+        return FALSE;
+    END IF;
+END ANNONCE_DISPONIBLE_FCT;
 
 --Q3_CALCULER_TOTAL
 --Cette fonction prend en paramètre l’id d’une annonce, une date de début, une date de fin ainsi
