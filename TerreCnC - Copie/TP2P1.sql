@@ -263,22 +263,34 @@ select * from cnc.reservations r where r.datedebut =  TO_DATE('2024-04-01', 'YYY
 CREATE OR REPLACE PROCEDURE RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC
 IS
 BEGIN
-    FOR r IN (SELECT r.*, u.nom, u.prenom, u.email
-              FROM cnc.reservations r
-              JOIN cnc.utilisateurs u ON r.utilisateurid = u.utilisateurid
-              ORDER BY r.annonceid)
+    FOR a IN (SELECT DISTINCT a.annonceid, a.titre
+              FROM cnc.annonces a
+              JOIN cnc.reservations r ON a.annonceid = r.annonceid
+              ORDER BY a.annonceid)
     LOOP
-        DBMS_OUTPUT.PUT_LINE(
-        'Annonce ID: ' || r.annonceid || ', 
-        Utilisateur: ' || r.nom || ' ' || r.prenom || ', 
-        Email: ' || r.email || ', 
-        Date début: ' || TO_CHAR(r.datedebut, 'DD-MM-YYYY') || ', 
-        Date fin: ' || TO_CHAR(r.datefin, 'DD-MM-YYYY'));
+        DBMS_OUTPUT.PUT_LINE('Annonce ID: ' || a.annonceid || ', Titre: ' || a.titre);
+        
+        FOR r IN (SELECT r.*, u.nom, u.prenom, u.email
+                  FROM cnc.reservations r
+                  JOIN cnc.utilisateurs u ON r.utilisateurid = u.utilisateurid
+                  WHERE r.annonceid = a.annonceid
+                  ORDER BY r.reservationid)
+        LOOP
+            -- Bloc pour les informations de l'utilisateur
+            DBMS_OUTPUT.PUT_LINE(
+                '  Utilisateur: ' || r.nom || ' ' || r.prenom ||
+                ', Email: ' || r.email
+            );
+            
+            -- Bloc pour les informations de la réservation
+            DBMS_OUTPUT.PUT_LINE(
+                '  Reservation ID: ' || r.reservationid ||
+                ', Date début: ' || TO_CHAR(r.datedebut, 'DD-MM-YYYY') ||
+                ', Date fin: ' || TO_CHAR(r.datefin, 'DD-MM-YYYY')
+            );
+        END LOOP;
     END LOOP;
 END RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC;
 
-
 exec RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC;
-
-select * from cnc.annonces;
 
