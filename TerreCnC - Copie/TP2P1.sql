@@ -1,10 +1,29 @@
+set serverout on;
+
 // FONCTIONS
 ------------
 --Q1_UTILISATEUR_EXISTE
 --Une simple fonction qui valide si un utilisateur avec l’ID passé en paramètre existe.
 --La fonction retourne un booléen.
 
+CREATE OR REPLACE FUNCTION UTILISATEUR_EXISTE_FCT(i_num_user in cnc.utilisateurs.id%type) 
+RETURN BOOLEAN is rec_user cnc.utilisateurs%rowtype;
 
+BEGIN
+    select 
+        u.UTILISATEURID ,
+        u.NOM ,
+        u.PRENOM ,
+        u.EMAIL ,
+        u.MOTDEPASSE 
+    into rec_user from cnc.utilisateurs u where u.id = i_num_user;
+    
+    IF rec_user is null then
+        return FALSE;
+    ELSE
+        return TRUE;
+    END IF;
+END UTILISATEUR_EXISTE_FCT;
 
 --Q2_ANNONCE_EST_DISPONIBLE
 --Cette fonction doit prendre en paramètre l’identifiant d’une annonce, une date de début et une
