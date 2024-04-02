@@ -292,9 +292,25 @@ select * from cnc.reservations r where r.datedebut =  TO_DATE('2024-04-01', 'YYY
 --dans un système de messagerie.
 --Si aucun message n'est trouvé entre les deux utilisateurs, la procédure affiche un message
 --indiquant qu'aucune conversation n'a été trouvée.
-
-
-
+CREATE OR REPLACE PROCEDURE AFFICHER_CONVERSATION_PRC(
+    p_user1id IN NUMBER,
+    p_user2id IN NUMBER
+) IS
+    v_Messages t_historique_message_varray;
+BEGIN
+    v_Messages := OBTENIR_MESSAGE_HISTORIQUE_FCT(p_user1id, p_user2id);
+    IF v_Messages.COUNT = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('Aucune conversation trouvée entre les utilisateurs spécifiés.');
+    ELSE
+    DBMS_OUTPUT.PUT_LINE('Messages échangés entre les utilisateurs ' || p_user1id || ' et ' || p_user2id || ':');
+        FOR i IN 1..v_Messages.COUNT LOOP
+            DBMS_OUTPUT.PUT_LINE('Message ' || i || ' envoyé par ' || v_Messages(i).ExpediteurUtilisateurID || ':');
+            DBMS_OUTPUT.PUT_LINE('  Contenu: ' || v_Messages(i).Contenu);
+            DBMS_OUTPUT.PUT_LINE('  Date: ' || TO_CHAR(v_Messages(i).DateEnvoi, 'DD-MM-YYYY HH24:MI:SS'));
+            DBMS_OUTPUT.PUT_LINE('---------------------------------------');
+        END LOOP;
+    END IF;
+END AFFICHER_CONVERSATION_PRC;
 
 --Q8_REVENUS_PAR_LOCALISATION
 --Cette procédure stocke les revenus générés dans chaque localisation dans un tableau
