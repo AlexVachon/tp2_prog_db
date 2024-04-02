@@ -42,7 +42,6 @@ END;
 --et retourner un booléen.
 
 CREATE OR REPLACE FUNCTION ANNONCE_DISPONIBLE_FCT(
-
 i_annonce in cnc.annonces.annonceid%type, 
 i_date_debut in cnc.reservations.datedebut%type, 
 i_date_fin in cnc.reservations.datefin%type)
@@ -130,9 +129,60 @@ END;
 --tableau.
 --Les messages doivent-être stockés en ordre chronologique dans un tableau de type VARRAY.
 
+CREATE OR REPLACE TYPE t_message_varray AS OBJECT(
+    MessageID NUMBER,
+    ExpediteurUtilisateurID NUMBER,
+    DestinataireUtilisateurID NUMBER,
+    Contenu VARCHAR2(1000),
+    DateEnvoi DATE
+);
 
+CREATE OR REPLACE TYPE t_historique_message_varray AS VARRAY(1000) OF t_message_varray;
 
+CREATE OR REPLACE FUNCTION OBTENIR_MESSAGE_HISTORIQUE_FCT(
+i_user1 in cnc.utilisateurs.utilisateurid%type, 
+i_user2 in cnc.utilisateurs.utilisateurid%type)
+RETURN t_historique_message_varray IS v_Messages t_historique_message_varray := t_historique_message_varray();
+BEGIN
+    FOR msg IN(
+        SELECT 
+            MESSAGEID ,
+            EXPEDITEURUTILISATEURID ,
+            DESTINATAIREUTILISATEURID ,
+            CONTENU ,
+            DATEENVOI
+        FROM messages 
+        WHERE (expediteurutilisateurid = i_user1 AND destinataireutilisateurid = i_user2) 
+            OR (expediteurutilisateurid = i_user2 AND destinataireutilisateurid = i_user1)
+        ORDER BY dateenvoi)
+    LOOP
+        v_Messages.EXTEND;
+        v_Messages(v_Messages.LAST) := t_message_varray(
+            msg.MessageID,
+            msg.ExpediteurUtilisateurID,
+            msg.DestinataireUtilisateurID,
+            msg.Contenu,
+            msg.DateEnvoi);
+    END LOOP;
+    RETURN v_Messages;
+END OBTENIR_MESSAGE_HISTORIQUE_FCT;
 
+DECLARE
+    v_Messages t_historique_message_varray;
+BEGIN
+    v_Messages := OBTENIR_MESSAGE_HISTORIQUE_FCT(1, 2);
+    
+    FOR i IN 1..v_Messages.COUNT LOOP
+        DBMS_OUTPUT.PUT_LINE('Message ' || i || ':');
+        DBMS_OUTPUT.PUT_LINE('   MessageID: ' || v_Messages(i).MessageID);
+        DBMS_OUTPUT.PUT_LINE('   ExpediteurUtilisateurID: ' || v_Messages(i).ExpediteurUtilisateurID);
+        DBMS_OUTPUT.PUT_LINE('   DestinataireUtilisateurID: ' || v_Messages(i).DestinataireUtilisateurID);
+        DBMS_OUTPUT.PUT_LINE('   Contenu: ' || v_Messages(i).Contenu);
+        DBMS_OUTPUT.PUT_LINE('   DateEnvoi: ' || TO_CHAR(v_Messages(i).DateEnvoi, 'DD-MM-YYYY HH24:MI:SS'));
+        DBMS_OUTPUT.PUT_LINE('---------------------------------------');
+    END LOOP;
+END;
+/
 
 // PROCEDURE STOCKER
 
