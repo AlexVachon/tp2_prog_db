@@ -6,24 +6,34 @@ set serverout on;
 --Une simple fonction qui valide si un utilisateur avec l’ID passé en paramètre existe.
 --La fonction retourne un booléen.
 
-CREATE OR REPLACE FUNCTION UTILISATEUR_EXISTE_FCT(i_num_user in cnc.utilisateurs.id%type) 
-RETURN BOOLEAN is rec_user cnc.utilisateurs%rowtype;
-
+CREATE OR REPLACE FUNCTION UTILISATEUR_EXISTE_FCT(i_num_user IN cnc.utilisateurs.utilisateurid%TYPE) 
+RETURN BOOLEAN IS 
+    rec_count INTEGER;
 BEGIN
-    select 
-        u.UTILISATEURID ,
-        u.NOM ,
-        u.PRENOM ,
-        u.EMAIL ,
-        u.MOTDEPASSE 
-    into rec_user from cnc.utilisateurs u where u.id = i_num_user;
+    SELECT COUNT(*) INTO rec_count 
+    FROM cnc.utilisateurs u 
+    WHERE u.utilisateurid = i_num_user;
     
-    IF rec_user is null then
-        return FALSE;
-    ELSE
-        return TRUE;
-    END IF;
+    RETURN rec_count > 0;
+    
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN FALSE;
 END UTILISATEUR_EXISTE_FCT;
+
+
+DECLARE
+    resultat BOOLEAN;
+BEGIN
+    resultat := UTILISATEUR_EXISTE_FCT(1);
+    
+    IF resultat THEN
+        DBMS_OUTPUT.PUT_LINE('Utilisateur existe?: Oui');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Utilisateur existe?: Non');
+    END IF;
+END;
+
 
 --Q2_ANNONCE_EST_DISPONIBLE
 --Cette fonction doit prendre en paramètre l’identifiant d’une annonce, une date de début et une
@@ -67,6 +77,53 @@ END ANNONCE_DISPONIBLE_FCT;
 ---     -Pour chaque nuit supplémentaire, ces frais de nettoyage diminuent de 2$ par personne
 --          par nuit, jusqu’à un minimum de 5$.
 
+CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
+    in_id_annonce IN cnc.annonces.annonceid%TYPE,
+    in_date_debut IN DATE,
+    in_date_fin IN DATE,
+    in_nombre IN INT
+) RETURN NUMBER IS
+    prix_total NUMBER := 0;
+    prix_par_nuit cnc.annonces.prixparnuit%TYPE;
+    interval_jour NUMBER;
+    frais_nettoyage NUMBER := 20;
+    i NUMBER;
+BEGIN
+    SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = in_id_annonce;
+
+    interval_jour := in_date_fin - in_date_debut;
+    
+    if interval_jour < 0 then
+        RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas être antérieure à la date de début.');
+    end if;
+
+    FOR i IN 1..interval_jour LOOP
+        prix_total := prix_total + prix_par_nuit + (frais_nettoyage * in_nombre);
+
+        IF i > 2 THEN
+            frais_nettoyage := frais_nettoyage - (2 * in_nombre);
+            IF frais_nettoyage < 5 THEN
+                frais_nettoyage := 5;
+            END IF;
+        END IF;
+    END LOOP;
+    
+    RETURN prix_total;
+    
+    EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur: ' || SQLERRM);
+        RETURN NULL;
+END CALCULER_TOTAL_FCT;
+
+
+DECLARE
+    montant_total NUMBER;
+BEGIN
+    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-02', 'YYYY-MM-DD'), 2);
+    
+    DBMS_OUTPUT.PUT_LINE('Montant total: ' || montant_total || '$');
+END;
 
 
 --Q4_OBTENIR_MESSAGE_HISTORIQUE
