@@ -56,7 +56,6 @@ BEGIN
     and not((i_date_debut between r.DATEDEBUT and r.DATEFIN)
         or (i_date_fin between r.DATEDEBUT and r.DATEFIN)
         or (i_date_debut <= r.DATEDEBUT and i_date_fin >= r.DATEFIN));
-    dbms_output.put_line(rec_count);
     return rec_count = 0;
         
 END ANNONCE_DISPONIBLE_FCT;
@@ -64,10 +63,10 @@ END ANNONCE_DISPONIBLE_FCT;
 declare
     resultat boolean;
 begin
-    resultat := ANNONCE_DISPONIBLE_FCT(3 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); //Non Dispo
---    resultat := ANNONCE_DISPONIBLE_FCT(2 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); //Dispo
+    resultat := ANNONCE_DISPONIBLE_FCT(3 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); --Non Dispo
+--    resultat := ANNONCE_DISPONIBLE_FCT(2 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); --Dispo
     
-    if resultat = true then
+    if resultat then
         dbms_output.put_line('disponible');
     else
         dbms_output.put_line('non disponible');
