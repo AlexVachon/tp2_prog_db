@@ -52,17 +52,25 @@ BEGIN
         )
     into rec_count from cnc.annonces a inner join cnc.reservations r on a.ANNONCEID = r.ANNONCEID
     where a.ANNONCEID = i_annonce
-    and not ((i_date_debut between r.DATEDEBUT and r.DATEFIN)
+    and not((i_date_debut between r.DATEDEBUT and r.DATEFIN)
         or (i_date_fin between r.DATEDEBUT and r.DATEFIN)
         or (i_date_debut <= r.DATEDEBUT and i_date_fin >= r.DATEFIN));
-    
-    return FALSE;
-    
-    EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RETURN TRUE;
+    return rec_count = 0;
         
 END ANNONCE_DISPONIBLE_FCT;
+
+declare
+    resultat boolean;
+begin
+    resultat := ANNONCE_DISPONIBLE_FCT(3 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); --Non Dispo
+--    resultat := ANNONCE_DISPONIBLE_FCT(2 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); --Dispo
+    
+    if resultat then
+        dbms_output.put_line('disponible');
+    else
+        dbms_output.put_line('non disponible');
+    end if;
+end;
 
 --Q3_CALCULER_TOTAL
 --Cette fonction prend en paramètre l’id d’une annonce, une date de début, une date de fin ainsi
@@ -76,10 +84,10 @@ END ANNONCE_DISPONIBLE_FCT;
 --          par nuit, jusqu’à un minimum de 5$.
 
 CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
-    in_id_annonce IN cnc.annonces.annonceid%TYPE,
-    in_date_debut IN DATE,
-    in_date_fin IN DATE,
-    in_nombre IN INT
+    i_id_annonce IN cnc.annonces.annonceid%TYPE,
+    i_date_debut IN DATE,
+    i_date_fin IN DATE,
+    i_nombre IN INT
 ) RETURN NUMBER IS
     prix_total NUMBER := 0;
     prix_par_nuit cnc.annonces.prixparnuit%TYPE;
@@ -87,19 +95,19 @@ CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
     frais_nettoyage NUMBER := 20;
     i NUMBER;
 BEGIN
-    SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = in_id_annonce;
+    SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = i_id_annonce;
 
-    interval_jour := in_date_fin - in_date_debut;
+    interval_jour := i_date_fin - i_date_debut;
     
     if interval_jour < 0 then
         RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas être antérieure à la date de début.');
     end if;
 
     FOR i IN 1..interval_jour LOOP
-        prix_total := prix_total + prix_par_nuit + (frais_nettoyage * in_nombre);
+        prix_total := prix_total + prix_par_nuit + (frais_nettoyage * i_nombre);
 
         IF i > 2 THEN
-            frais_nettoyage := frais_nettoyage - (2 * in_nombre);
+            frais_nettoyage := frais_nettoyage - (2 * i_nombre);
             IF frais_nettoyage < 5 THEN
                 frais_nettoyage := 5;
             END IF;
@@ -109,16 +117,19 @@ BEGIN
     RETURN prix_total;
     
     EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE(sqlerrm);
+        RETURN 0;
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erreur: ' || SQLERRM);
-        RETURN NULL;
+        RETURN 0;
 END CALCULER_TOTAL_FCT;
 
 
 DECLARE
-    montant_total NUMBER;
+    montant_total NUMBER := 0;
 BEGIN
-    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-02', 'YYYY-MM-DD'), 2);
+    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-04', 'YYYY-MM-DD'), 2);
     
     DBMS_OUTPUT.PUT_LINE('Montant total: ' || montant_total || '$');
 END;
@@ -229,6 +240,50 @@ END;
 --Le statut de la réservation doit-être ‘En attente’.
 
 
+CREATE OR REPLACE PROCEDURE RESERVER_PROC(
+    i_annonceid IN cnc.annonces.annonceid%TYPE, 
+    i_date_debut IN DATE, 
+    i_date_fin IN DATE,
+    i_nombre IN INT
+)
+IS
+    rec_disponible BOOLEAN;
+    rec_prix number;
+BEGIN
+    rec_disponible := ANNONCE_DISPONIBLE_FCT(i_annonceid, i_date_debut, i_date_fin);
+    
+    IF rec_disponible THEN
+        DBMS_OUTPUT.PUT_LINE('Aucune reservation en conflit');
+        rec_prix := CALCULER_TOTAL_FCT(i_annonceid, i_date_debut, i_date_fin, i_nombre);
+        
+        DBMS_OUTPUT.PUT_LINE(rec_prix);
+        
+        INSERT INTO cnc.reservations (utilisateurid, annonceid, datedebut, datefin, statut, montanttotal) 
+        VALUES (null, i_annonceid, i_date_debut, i_date_fin, 'En attente', rec_prix);
+        
+        DBMS_OUTPUT.PUT_LINE('Réservation enregistrée!');
+
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Les dates rentrent en conflit avec une autre réservation.');
+
+    END IF;
+    
+    COMMIT;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('Erreur lors de la réservation: ' || SQLERRM);
+END RESERVER_PROC;
+
+
+BEGIN
+    RESERVER_PROC(
+        1 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD'), 2
+    );
+END;
+
+select * from cnc.reservations r where r.datedebut =  TO_DATE('2024-04-01', 'YYYY-MM-DD') and r.datefin = TO_DATE('2024-04-29', 'YYYY-MM-DD') and r.annonceid = 1;
+
 
 --Q7_AFFICHER_CONVERSATION
 --Cette procédure utilise la fonction Q4_OBTENIR_MESSAGE_HISTORIQUE afin d’afficher les
@@ -255,7 +310,37 @@ END;
 --liste des utilisateurs ayant réservé cette annonce ainsi que les informations de leurs
 --réservations.
 
+CREATE OR REPLACE PROCEDURE RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC
+IS
+BEGIN
+    FOR a IN (SELECT DISTINCT a.annonceid, a.titre
+              FROM cnc.annonces a
+              JOIN cnc.reservations r ON a.annonceid = r.annonceid
+              ORDER BY a.annonceid)
+    LOOP
+        DBMS_OUTPUT.PUT_LINE('Annonce ID: ' || a.annonceid || ', Titre: ' || a.titre);
+        
+        FOR r IN (SELECT r.*, u.nom, u.prenom, u.email
+                  FROM cnc.reservations r
+                  JOIN cnc.utilisateurs u ON r.utilisateurid = u.utilisateurid
+                  WHERE r.annonceid = a.annonceid
+                  ORDER BY r.reservationid)
+        LOOP
+            -- Bloc pour les informations de l'utilisateur
+            DBMS_OUTPUT.PUT_LINE(
+                '  Utilisateur: ' || r.nom || ' ' || r.prenom ||
+                ', Email: ' || r.email
+            );
+            
+            -- Bloc pour les informations de la réservation
+            DBMS_OUTPUT.PUT_LINE(
+                '  Reservation ID: ' || r.reservationid ||
+                ', Date début: ' || TO_CHAR(r.datedebut, 'DD-MM-YYYY') ||
+                ', Date fin: ' || TO_CHAR(r.datefin, 'DD-MM-YYYY')
+            );
+        END LOOP;
+    END LOOP;
+END RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC;
 
-
-
+exec RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC;
 
