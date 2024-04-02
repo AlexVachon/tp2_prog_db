@@ -111,16 +111,19 @@ BEGIN
     RETURN prix_total;
     
     EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE(sqlerrm);
+        RETURN 0;
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erreur: ' || SQLERRM);
-        RETURN NULL;
+        RETURN 0;
 END CALCULER_TOTAL_FCT;
 
 
 DECLARE
-    montant_total NUMBER;
+    montant_total NUMBER := 0;
 BEGIN
-    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-02', 'YYYY-MM-DD'), 2);
+    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-04', 'YYYY-MM-DD'), 2);
     
     DBMS_OUTPUT.PUT_LINE('Montant total: ' || montant_total || '$');
 END;
