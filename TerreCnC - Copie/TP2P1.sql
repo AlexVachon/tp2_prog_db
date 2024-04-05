@@ -202,7 +202,7 @@ END;
 --Vous devez également supprimer les réservations, les commentaires et les photos associées à
 --cette annonce.
 
-CREATE OR REPLACE PROCEDURE SUPPRIMER_ANNONCE_PROC(in_annonceid IN cnc.annonces.annonceid%TYPE)
+CREATE OR REPLACE PROCEDURE SUPPRIMER_ANNONCE_PRC(in_annonceid IN cnc.annonces.annonceid%TYPE)
 IS
 BEGIN
     DELETE FROM cnc.reservations r WHERE r.annonceid = in_annonceid;
@@ -222,11 +222,11 @@ EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
         DBMS_OUTPUT.PUT_LINE('Erreur lors de la suppression de l''annonce: ' || SQLERRM);
-END SUPPRIMER_ANNONCE_PROC;
+END SUPPRIMER_ANNONCE_PRC;
 
 
 BEGIN
-    SUPPRIMER_ANNONCE_PROC(1);
+    SUPPRIMER_ANNONCE_PRC(1);
 END;
 
 --Q6_RESERVER
@@ -240,7 +240,7 @@ END;
 --Le statut de la réservation doit-être ‘En attente’.
 
 
-CREATE OR REPLACE PROCEDURE RESERVER_PROC(
+CREATE OR REPLACE PROCEDURE RESERVER_PRC(
     i_annonceid IN cnc.annonces.annonceid%TYPE, 
     i_date_debut IN DATE, 
     i_date_fin IN DATE,
@@ -273,11 +273,11 @@ EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
         DBMS_OUTPUT.PUT_LINE('Erreur lors de la réservation: ' || SQLERRM);
-END RESERVER_PROC;
+END RESERVER_PRC;
 
 
 BEGIN
-    RESERVER_PROC(
+    RESERVER_PRC(
         1 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD'), 2
     );
 END;
@@ -319,14 +319,29 @@ END AFFICHER_CONVERSATION_PRC;
 --Québec : 10 000$
 --Trois-Rivières : 8500$
 
+CREATE TYPE t_tableau_revenus IS TABLE OF NUMBER INDEX BY VARCHAR2(200);
 
+CREATE OR REPLACE PROCEDURE REVENUS_PAR_LOCALISATION_PRC (p_tableau OUT t_tableau_revenus) IS
+BEGIN
+    p_tableau := t_tableau_revenus();
+    FOR i IN (
+        SELECT a.LOCALISATION, SUM(r.MONTANTTOTAL) AS TOTAL 
+        FROM ANNONCES a JOIN RESERVATIONS r ON r.ANNONCEID = a.ANNONCEID 
+        WHERE r.STATUT = 'confirmée' 
+        GROUP BY a.Localisation)
+    LOOP
+        p_tableau(rec.Localisation) := rec.Total;
+        DBMS_OUTPUT.PUT_LINE('Localisation : ' || rec.Localisation || ', Total Revenus : ' || rec.Total);
+    END LOOP;
+    
+END REVENUS_PAR_LOCALISATION_PRC;
 
 --Q9_RESERVATION_PAR_USAGER_PAR_ANNONCE
 --Cette procédure doit générer dans la console un rapport qui affiche, pour chaque annonce, la
 --liste des utilisateurs ayant réservé cette annonce ainsi que les informations de leurs
 --réservations.
 
-CREATE OR REPLACE PROCEDURE RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC
+CREATE OR REPLACE PROCEDURE RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC
 IS
 BEGIN
     FOR a IN (SELECT DISTINCT a.annonceid, a.titre
@@ -356,7 +371,7 @@ BEGIN
             );
         END LOOP;
     END LOOP;
-END RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC;
+END RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 
-exec RESERVATION_PAR_USAGER_PAR_ANNONCE_PROC;
+exec RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 
