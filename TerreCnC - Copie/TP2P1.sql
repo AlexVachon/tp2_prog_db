@@ -332,7 +332,6 @@ BEGIN
         p_tableau(rec.Localisation) := rec.Total;
         DBMS_OUTPUT.PUT_LINE('rec.Localisation' || ' : ' || rec.Total || '$');
     END LOOP;
-    
 END REVENUS_PAR_LOCALISATION_PRC;
 
 --Q9_RESERVATION_PAR_USAGER_PAR_ANNONCE
