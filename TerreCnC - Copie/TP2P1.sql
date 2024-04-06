@@ -259,9 +259,8 @@ END AFFICHER_CONVERSATION_PRC;
 --Québec : 10 000$
 --Trois-Rivières : 8500$
 
-CREATE TYPE t_tableau_revenus IS TABLE OF NUMBER INDEX BY VARCHAR2(200);
-
 CREATE OR REPLACE PROCEDURE REVENUS_PAR_LOCALISATION_PRC (p_tableau OUT t_tableau_revenus) IS
+TYPE t_tableau_revenus IS TABLE OF NUMBER INDEX BY VARCHAR2(200);
 BEGIN
     p_tableau := t_tableau_revenus();
     FOR i IN (
@@ -271,9 +270,8 @@ BEGIN
         GROUP BY a.Localisation)
     LOOP
         p_tableau(rec.Localisation) := rec.Total;
-        DBMS_OUTPUT.PUT_LINE('Localisation : ' || rec.Localisation || ', Total Revenus : ' || rec.Total);
+        DBMS_OUTPUT.PUT_LINE('rec.Localisation' || ' : ' || rec.Total || '$');
     END LOOP;
-    
 END REVENUS_PAR_LOCALISATION_PRC;
 
 --Q9_RESERVATION_PAR_USAGER_PAR_ANNONCE
