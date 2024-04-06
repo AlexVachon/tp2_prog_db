@@ -1,4 +1,4 @@
-set serverout on;
+SET SERVEROUTPUT ON;
 
 // FONCTIONS
 ------------
@@ -13,27 +13,13 @@ BEGIN
     SELECT COUNT(*) INTO rec_count 
     FROM cnc.utilisateurs u 
     WHERE u.utilisateurid = i_num_user;
-    
+
     RETURN rec_count > 0;
     
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RETURN FALSE;
 END UTILISATEUR_EXISTE_FCT;
-
-
-DECLARE
-    resultat BOOLEAN;
-BEGIN
-    resultat := UTILISATEUR_EXISTE_FCT(1);
-    
-    IF resultat THEN
-        DBMS_OUTPUT.PUT_LINE('Utilisateur existe?: Oui');
-    ELSE
-        DBMS_OUTPUT.PUT_LINE('Utilisateur existe?: Non');
-    END IF;
-END;
-
 
 --Q2_ANNONCE_EST_DISPONIBLE
 --Cette fonction doit prendre en paramètre l’identifiant d’une annonce, une date de début et une
@@ -52,25 +38,11 @@ BEGIN
         )
     into rec_count from cnc.annonces a inner join cnc.reservations r on a.ANNONCEID = r.ANNONCEID
     where a.ANNONCEID = i_annonce
-    and not((i_date_debut between r.DATEDEBUT and r.DATEFIN)
-        or (i_date_fin between r.DATEDEBUT and r.DATEFIN)
-        or (i_date_debut <= r.DATEDEBUT and i_date_fin >= r.DATEFIN));
+    and (i_date_debut between r.DATEDEBUT and r.DATEFIN
+        or i_date_fin between r.DATEDEBUT and r.DATEFIN);
     return rec_count = 0;
         
 END ANNONCE_DISPONIBLE_FCT;
-
-declare
-    resultat boolean;
-begin
-    resultat := ANNONCE_DISPONIBLE_FCT(3 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); --Non Dispo
---    resultat := ANNONCE_DISPONIBLE_FCT(2 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD')); --Dispo
-    
-    if resultat then
-        dbms_output.put_line('disponible');
-    else
-        dbms_output.put_line('non disponible');
-    end if;
-end;
 
 --Q3_CALCULER_TOTAL
 --Cette fonction prend en paramètre l’id d’une annonce, une date de début, une date de fin ainsi
@@ -125,16 +97,6 @@ BEGIN
         RETURN 0;
 END CALCULER_TOTAL_FCT;
 
-
-DECLARE
-    montant_total NUMBER := 0;
-BEGIN
-    montant_total := CALCULER_TOTAL_FCT(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-04', 'YYYY-MM-DD'), 2);
-    
-    DBMS_OUTPUT.PUT_LINE('Montant total: ' || montant_total || '$');
-END;
-
-
 --Q4_OBTENIR_MESSAGE_HISTORIQUE
 --Cette fonction renvoie l’ensemble des messages échangés entre deux utilisateurs dans un
 --tableau.
@@ -178,23 +140,6 @@ BEGIN
     RETURN v_Messages;
 END OBTENIR_MESSAGE_HISTORIQUE_FCT;
 
-DECLARE
-    v_Messages t_historique_message_varray;
-BEGIN
-    v_Messages := OBTENIR_MESSAGE_HISTORIQUE_FCT(1, 2);
-    
-    FOR i IN 1..v_Messages.COUNT LOOP
-        DBMS_OUTPUT.PUT_LINE('Message ' || i || ':');
-        DBMS_OUTPUT.PUT_LINE('   MessageID: ' || v_Messages(i).MessageID);
-        DBMS_OUTPUT.PUT_LINE('   ExpediteurUtilisateurID: ' || v_Messages(i).ExpediteurUtilisateurID);
-        DBMS_OUTPUT.PUT_LINE('   DestinataireUtilisateurID: ' || v_Messages(i).DestinataireUtilisateurID);
-        DBMS_OUTPUT.PUT_LINE('   Contenu: ' || v_Messages(i).Contenu);
-        DBMS_OUTPUT.PUT_LINE('   DateEnvoi: ' || TO_CHAR(v_Messages(i).DateEnvoi, 'DD-MM-YYYY HH24:MI:SS'));
-        DBMS_OUTPUT.PUT_LINE('---------------------------------------');
-    END LOOP;
-END;
-/
-
 // PROCEDURE STOCKER
 
 --Q5_SUPPRIMER_ANNONCE
@@ -224,11 +169,6 @@ EXCEPTION
         DBMS_OUTPUT.PUT_LINE('Erreur lors de la suppression de l''annonce: ' || SQLERRM);
 END SUPPRIMER_ANNONCE_PRC;
 
-
-BEGIN
-    SUPPRIMER_ANNONCE_PRC(1);
-END;
-
 --Q6_RESERVER
 --Cette procédure prend en paramètre l’id d’une annonce, une date de début, une date de fin
 --ainsi qu’un nombre de personnes.
@@ -248,7 +188,7 @@ CREATE OR REPLACE PROCEDURE RESERVER_PRC(
 )
 IS
     rec_disponible BOOLEAN;
-    rec_prix number;
+    rec_prix NUMBER;
 BEGIN
     rec_disponible := ANNONCE_DISPONIBLE_FCT(i_annonceid, i_date_debut, i_date_fin);
     
@@ -256,10 +196,8 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('Aucune reservation en conflit');
         rec_prix := CALCULER_TOTAL_FCT(i_annonceid, i_date_debut, i_date_fin, i_nombre);
         
-        DBMS_OUTPUT.PUT_LINE(rec_prix);
-        
-        INSERT INTO cnc.reservations (utilisateurid, annonceid, datedebut, datefin, statut, montanttotal) 
-        VALUES (null, i_annonceid, i_date_debut, i_date_fin, 'En attente', rec_prix);
+        INSERT INTO cnc.reservations (annonceid, datedebut, datefin, statut, montanttotal) 
+        VALUES (i_annonceid, i_date_debut, i_date_fin, 'en attente', rec_prix);
         
         DBMS_OUTPUT.PUT_LINE('Réservation enregistrée!');
 
@@ -278,12 +216,14 @@ END RESERVER_PRC;
 
 BEGIN
     RESERVER_PRC(
-        1 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD'), 2
+        1 , TO_DATE('2024-04-06', 'YYYY-MM-DD'), TO_DATE('2024-04-08', 'YYYY-MM-DD'), 2
     );
 END;
 
-select * from cnc.reservations r where r.datedebut =  TO_DATE('2024-04-01', 'YYYY-MM-DD') and r.datefin = TO_DATE('2024-04-29', 'YYYY-MM-DD') and r.annonceid = 1;
+select * from cnc.reservations r where r.datedebut =  TO_DATE('2024-04-01', 'YYYY-MM-DD') and r.datefin = TO_DATE('2024-04-02', 'YYYY-MM-DD') and r.annonceid = 1;
 
+select * from cnc.reservations;
+select * from cnc.annonces;
 
 --Q7_AFFICHER_CONVERSATION
 --Cette procédure utilise la fonction Q4_OBTENIR_MESSAGE_HISTORIQUE afin d’afficher les
@@ -350,28 +290,263 @@ BEGIN
               ORDER BY a.annonceid)
     LOOP
         DBMS_OUTPUT.PUT_LINE('Annonce ID: ' || a.annonceid || ', Titre: ' || a.titre);
+         DBMS_OUTPUT.PUT_LINE('-----------------------------------------------------');
+         DBMS_OUTPUT.PUT_LINE('');
         
-        FOR r IN (SELECT r.*, u.nom, u.prenom, u.email
+        FOR u IN (SELECT DISTINCT u.utilisateurid, u.nom, u.prenom, u.email
                   FROM cnc.reservations r
                   JOIN cnc.utilisateurs u ON r.utilisateurid = u.utilisateurid
                   WHERE r.annonceid = a.annonceid
-                  ORDER BY r.reservationid)
+                  ORDER BY u.utilisateurid)
         LOOP
-            -- Bloc pour les informations de l'utilisateur
             DBMS_OUTPUT.PUT_LINE(
-                '  Utilisateur: ' || r.nom || ' ' || r.prenom ||
-                ', Email: ' || r.email
+                ' - Utilisateur: ' || u.nom || ' ' || u.prenom ||
+                ', Email: ' || u.email
             );
+            DBMS_OUTPUT.PUT_LINE('');
             
-            -- Bloc pour les informations de la réservation
-            DBMS_OUTPUT.PUT_LINE(
-                '  Reservation ID: ' || r.reservationid ||
-                ', Date début: ' || TO_CHAR(r.datedebut, 'DD-MM-YYYY') ||
-                ', Date fin: ' || TO_CHAR(r.datefin, 'DD-MM-YYYY')
-            );
+            FOR r IN (SELECT r.*
+                      FROM cnc.reservations r
+                      WHERE r.annonceid = a.annonceid
+                        AND r.utilisateurid = u.utilisateurid
+                      ORDER BY r.reservationid)
+            LOOP
+                -- Bloc pour les informations de la réservation
+                DBMS_OUTPUT.PUT_LINE(
+                    '       Reservation ID: ' || r.reservationid ||
+                    ', Date début: ' || TO_CHAR(r.datedebut, 'DD-MM-YYYY') ||
+                    ', Date fin: ' || TO_CHAR(r.datefin, 'DD-MM-YYYY')
+                );
+            END LOOP;
+            DBMS_OUTPUT.PUT_LINE('');
         END LOOP;
     END LOOP;
 END RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 
+
 exec RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 
+
+-- Spécification du package
+CREATE OR REPLACE PACKAGE TRAITEMENTS_CNC_PKG AS
+    -- Fonction pour vérifier si un utilisateur existe
+    FUNCTION utilisateur_existe(
+        i_num_user IN cnc.utilisateurs.utilisateurid%TYPE
+    ) RETURN BOOLEAN;
+    
+    -- Fonction pour vérifier si une annonce est disponible
+    FUNCTION annonce_disponible(
+        i_annonce IN cnc.annonces.annonceid%TYPE, 
+        i_date_debut IN cnc.reservations.datedebut%TYPE, 
+        i_date_fin IN cnc.reservations.datefin%TYPE
+    ) RETURN BOOLEAN;
+    
+    -- Fonction pour calculer le montant total d'une réservation
+    FUNCTION calculer_total(
+        i_id_annonce IN cnc.annonces.annonceid%TYPE,
+        i_date_debut IN DATE,
+        i_date_fin IN DATE,
+        i_nombre IN INT
+    ) RETURN NUMBER;
+    
+    -- Fonction pour obtenir l'historique des messages entre deux utilisateurs
+    FUNCTION obtenir_message_historique(
+        i_user1 IN cnc.utilisateurs.utilisateurid%TYPE, 
+        i_user2 IN cnc.utilisateurs.utilisateurid%TYPE
+    ) RETURN t_historique_message_varray;
+    
+    -- Procédure pour supprimer une annonce avec ses réservations associées
+    PROCEDURE supprimer_annonce(
+        in_annonceid IN cnc.annonces.annonceid%TYPE
+    );
+    
+    -- Procédure pour effectuer une réservation
+    PROCEDURE reserver(
+        i_annonceid IN cnc.annonces.annonceid%TYPE, 
+        i_date_debut IN DATE, 
+        i_date_fin IN DATE,
+        i_nombre IN INT
+    );
+    
+    -- Procédure pour afficher l'historique des messages entre deux utilisateurs
+    PROCEDURE afficher_conversation(
+        p_user1id IN NUMBER,
+        p_user2id IN NUMBER
+    );
+    
+    -- Procédure pour stocker les revenus générés par localisation
+--    PROCEDURE revenus_par_localisation(
+--        p_tableau OUT t_tableau_revenus
+--    );
+    
+    -- Procédure pour afficher les réservations par utilisateur et par annonce
+    PROCEDURE reservation_par_usager_par_annonce;
+END TRAITEMENTS_CNC_PKG;
+
+
+CREATE OR REPLACE PACKAGE BODY TRAITEMENTS_CNC_PKG AS
+    FUNCTION utilisateur_existe(
+        i_num_user IN cnc.utilisateurs.utilisateurid%TYPE
+    ) RETURN BOOLEAN AS 
+        resultat BOOLEAN;
+    BEGIN
+        resultat := UTILISATEUR_EXISTE_FCT(i_num_user);
+        
+        IF resultat THEN
+            DBMS_OUTPUT.PUT_LINE('Utilisateur existe?: Oui');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Utilisateur existe?: Non');
+        END IF;
+        
+        RETURN resultat;
+    END utilisateur_existe;
+    
+    FUNCTION annonce_disponible(
+        i_annonce IN cnc.annonces.annonceid%TYPE, 
+        i_date_debut IN cnc.reservations.datedebut%TYPE, 
+        i_date_fin IN cnc.reservations.datefin%TYPE
+    ) RETURN BOOLEAN AS
+        resultat BOOLEAN;
+    BEGIN
+        resultat := ANNONCE_DISPONIBLE_FCT(i_annonce, i_date_debut, i_date_fin);
+        if resultat then
+            dbms_output.put_line('disponible');
+        else
+            dbms_output.put_line('non disponible');
+        end if;
+        RETURN resultat;
+    END annonce_disponible;
+    
+    FUNCTION calculer_total(
+        i_id_annonce IN cnc.annonces.annonceid%TYPE,
+        i_date_debut IN DATE,
+        i_date_fin IN DATE,
+        i_nombre IN INT
+    ) RETURN NUMBER AS
+        montant_total NUMBER;
+    BEGIN
+        montant_total := CALCULER_TOTAL_FCT(i_id_annonce, i_date_debut, i_date_fin, i_nombre);
+        DBMS_OUTPUT.PUT_LINE('Montant total: ' || montant_total || '$');
+        RETURN montant_total;
+    END calculer_total;
+    
+    FUNCTION obtenir_message_historique(
+        i_user1 IN cnc.utilisateurs.utilisateurid%TYPE, 
+        i_user2 IN cnc.utilisateurs.utilisateurid%TYPE
+    ) RETURN t_historique_message_varray AS 
+        v_Messages t_historique_message_varray;
+    BEGIN
+        v_Messages := OBTENIR_MESSAGE_HISTORIQUE_FCT(i_user1, i_user2);
+        FOR i IN 1..v_Messages.COUNT LOOP
+            DBMS_OUTPUT.PUT_LINE('Message ' || i || ':');
+            DBMS_OUTPUT.PUT_LINE('   MessageID: ' || v_Messages(i).MessageID);
+            DBMS_OUTPUT.PUT_LINE('   ExpediteurUtilisateurID: ' || v_Messages(i).ExpediteurUtilisateurID);
+            DBMS_OUTPUT.PUT_LINE('   DestinataireUtilisateurID: ' || v_Messages(i).DestinataireUtilisateurID);
+            DBMS_OUTPUT.PUT_LINE('   Contenu: ' || v_Messages(i).Contenu);
+            DBMS_OUTPUT.PUT_LINE('   DateEnvoi: ' || TO_CHAR(v_Messages(i).DateEnvoi, 'DD-MM-YYYY HH24:MI:SS'));
+            DBMS_OUTPUT.PUT_LINE('---------------------------------------');
+        END LOOP;
+        RETURN v_Messages;
+    END obtenir_message_historique;
+    
+    PROCEDURE supprimer_annonce(
+        in_annonceid IN cnc.annonces.annonceid%TYPE
+    ) AS
+    BEGIN
+        SUPPRIMER_ANNONCE_PRC(in_annonceid);
+    END supprimer_annonce;
+    
+    PROCEDURE reserver(
+        i_annonceid IN cnc.annonces.annonceid%TYPE, 
+        i_date_debut IN DATE, 
+        i_date_fin IN DATE,
+        i_nombre IN INT
+    ) AS
+    BEGIN
+        RESERVER_PRC(i_annonceid, i_date_debut, i_date_fin, i_nombre);
+    END reserver;
+    
+    PROCEDURE afficher_conversation(
+        p_user1id IN NUMBER,
+        p_user2id IN NUMBER
+    ) AS
+    BEGIN
+        AFFICHER_CONVERSATION_PRC(p_user1id, p_user2id);
+    END afficher_conversation;
+    
+--    PROCEDURE revenus_par_localisation(
+--        p_tableau OUT t_tableau_revenus
+--    ) AS
+--    BEGIN
+--        REVENUS_PAR_LOCALISATION_PRC(p_tableau);
+--    END revenus_par_localisation;
+    
+    PROCEDURE reservation_par_usager_par_annonce AS
+    BEGIN
+        RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC();
+    END reservation_par_usager_par_annonce;
+END TRAITEMENTS_CNC_PKG;
+
+
+// TESTS
+
+--Q1
+--declare
+--    resultat BOOLEAN;
+--begin
+--    resultat := TRAITEMENTS_CNC_PKG.utilisateur_existe(1);
+--end;
+
+--Q2
+--declare
+--    resultat BOOLEAN;
+--begin
+--    resultat := TRAITEMENTS_CNC_PKG.annonce_disponible(1 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-05', 'YYYY-MM-DD'));
+--    resultat := TRAITEMENTS_CNC_PKG.annonce_disponible(2 , TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-29', 'YYYY-MM-DD'));
+--end;
+
+--Q3
+--DECLARE
+--    montant_total NUMBER := 0;
+--BEGIN
+--    montant_total := TRAITEMENTS_CNC_PKG.calculer_total(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-04', 'YYYY-MM-DD'), 1);
+--    montant_total := TRAITEMENTS_CNC_PKG.calculer_total(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-04', 'YYYY-MM-DD'), 2);
+--    montant_total := TRAITEMENTS_CNC_PKG.calculer_total(1, TO_DATE('2024-04-01', 'YYYY-MM-DD'), TO_DATE('2024-04-04', 'YYYY-MM-DD'), 3);
+--END;
+
+--Q4
+--declare
+--    v_Message t_historique_message_varray;
+--begin
+--    v_Message := TRAITEMENTS_CNC_PKG.obtenir_message_historique(1, 2);
+--end;
+
+--Q5
+--begin
+--    TRAITEMENTS_CNC_PKG.supprimer_annonce(1);
+--end;
+
+--Q6
+--begin
+--    TRAITEMENTS_CNC_PKG.reserver(
+--        5 , TO_DATE('2024-06-01', 'YYYY-MM-DD'), TO_DATE('2024-06-03', 'YYYY-MM-DD'), 2
+--    );
+--    TRAITEMENTS_CNC_PKG.reserver(
+--        5 , TO_DATE('2024-06-06', 'YYYY-MM-DD'), TO_DATE('2024-06-08', 'YYYY-MM-DD'), 2
+--    );
+--
+--end;
+--
+
+--Q7
+--begin
+--    TRAITEMENTS_CNC_PKG.afficher_conversation(1, 2);
+--end;
+
+--Q8
+
+
+--Q9
+--begin
+--    TRAITEMENTS_CNC_PKG.reservation_par_usager_par_annonce();
+--end;
