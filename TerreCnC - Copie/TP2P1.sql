@@ -196,14 +196,12 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('Aucune reservation en conflit');
         rec_prix := CALCULER_TOTAL_FCT(i_annonceid, i_date_debut, i_date_fin, i_nombre);
         
-        INSERT INTO cnc.reservations (annonceid, datedebut, datefin, statut, montanttotal) 
-        VALUES (i_annonceid, i_date_debut, i_date_fin, 'en attente', rec_prix);
+        INSERT INTO cnc.reservations (reservationid, utilisateurid, annonceid, datedebut, datefin, statut, montanttotal) 
+        VALUES ((select max(reservationid) from cnc.reservations) + 1, null, i_annonceid, i_date_debut, i_date_fin, 'en attente', rec_prix);
         
         DBMS_OUTPUT.PUT_LINE('Réservation enregistrée!');
-
     ELSE
         DBMS_OUTPUT.PUT_LINE('Les dates rentrent en conflit avec une autre réservation.');
-
     END IF;
     
     COMMIT;
@@ -212,18 +210,6 @@ EXCEPTION
         ROLLBACK;
         DBMS_OUTPUT.PUT_LINE('Erreur lors de la réservation: ' || SQLERRM);
 END RESERVER_PRC;
-
-
-BEGIN
-    RESERVER_PRC(
-        1 , TO_DATE('2024-04-06', 'YYYY-MM-DD'), TO_DATE('2024-04-08', 'YYYY-MM-DD'), 2
-    );
-END;
-
-select * from cnc.reservations r where r.datedebut =  TO_DATE('2024-04-01', 'YYYY-MM-DD') and r.datefin = TO_DATE('2024-04-02', 'YYYY-MM-DD') and r.annonceid = 1;
-
-select * from cnc.reservations;
-select * from cnc.annonces;
 
 --Q7_AFFICHER_CONVERSATION
 --Cette procédure utilise la fonction Q4_OBTENIR_MESSAGE_HISTORIQUE afin d’afficher les
