@@ -10,14 +10,23 @@ CREATE OR REPLACE FUNCTION UTILISATEUR_EXISTE_FCT(i_num_user IN cnc.utilisateurs
 RETURN BOOLEAN IS 
     rec_count INTEGER;
 BEGIN
+    IF i_num_user <=0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'ID ne peut être égale à 0 ou négatif.');
+    END IF;
+    
     SELECT COUNT(*) INTO rec_count 
     FROM cnc.utilisateurs u 
     WHERE u.utilisateurid = i_num_user;
 
+    IF rec_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20000, 'ID ne correspond à aucune donnée.');
+    END IF;
+
     RETURN rec_count > 0;
     
 EXCEPTION
-    WHEN NO_DATA_FOUND THEN
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur dans UTILISATEUR_EXISTE_FCT : ' || SQLERRM);
         RETURN FALSE;
 END UTILISATEUR_EXISTE_FCT;
 
@@ -70,6 +79,9 @@ CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
     frais_nettoyage NUMBER := 20;
     i NUMBER;
 BEGIN
+    IF i_nombre <= 0 OR i_id_annonce <= 0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Vous ne pouvez utiliser de nombre nÃ©gatifs dans les paramÃ¨tres.');
+    END IF;
     SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = i_id_annonce;
 
     interval_jour := i_date_fin - i_date_debut;
@@ -309,9 +321,6 @@ BEGIN
         END LOOP;
     END LOOP;
 END RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
-
-
-exec RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 
 
 -- Spï¿½cification du package
