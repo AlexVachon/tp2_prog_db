@@ -3,8 +3,8 @@ SET SERVEROUTPUT ON;
 // FONCTIONS
 ------------
 --Q1_UTILISATEUR_EXISTE
---Une simple fonction qui valide si un utilisateur avec l’ID passé en paramètre existe.
---La fonction retourne un booléen.
+--Une simple fonction qui valide si un utilisateur avec lï¿½ID passï¿½ en paramï¿½tre existe.
+--La fonction retourne un boolï¿½en.
 
 CREATE OR REPLACE FUNCTION UTILISATEUR_EXISTE_FCT(i_num_user IN cnc.utilisateurs.utilisateurid%TYPE) 
 RETURN BOOLEAN IS 
@@ -22,10 +22,10 @@ EXCEPTION
 END UTILISATEUR_EXISTE_FCT;
 
 --Q2_ANNONCE_EST_DISPONIBLE
---Cette fonction doit prendre en paramètre l’identifiant d’une annonce, une date de début et une
---date de fin de séjour.
---Elle devra valider si l’annonce est disponible ou non pour la plage horaire passée en paramètre
---et retourner un booléen.
+--Cette fonction doit prendre en paramï¿½tre lï¿½identifiant dï¿½une annonce, une date de dï¿½but et une
+--date de fin de sï¿½jour.
+--Elle devra valider si lï¿½annonce est disponible ou non pour la plage horaire passï¿½e en paramï¿½tre
+--et retourner un boolï¿½en.
 
 CREATE OR REPLACE FUNCTION ANNONCE_DISPONIBLE_FCT(
 i_annonce in cnc.annonces.annonceid%type, 
@@ -33,6 +33,9 @@ i_date_debut in cnc.reservations.datedebut%type,
 i_date_fin in cnc.reservations.datefin%type)
 RETURN BOOLEAN is rec_count INT;
 BEGIN
+    IF(i_date_debut > i_date_fin) THEN
+        RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas ï¿½tre antï¿½rieure ï¿½ la date de dï¿½but.');
+    END IF;
     select count(
         a.ANNONCEID
         )
@@ -45,15 +48,15 @@ BEGIN
 END ANNONCE_DISPONIBLE_FCT;
 
 --Q3_CALCULER_TOTAL
---Cette fonction prend en paramètre l’id d’une annonce, une date de début, une date de fin ainsi
---qu’un nombre de personnes.
---Elle devra calculer le montant total d’une éventuelle réservation en respectant les règles
+--Cette fonction prend en paramï¿½tre lï¿½id dï¿½une annonce, une date de dï¿½but, une date de fin ainsi
+--quï¿½un nombre de personnes.
+--Elle devra calculer le montant total dï¿½une ï¿½ventuelle rï¿½servation en respectant les rï¿½gles
 --suivantes :
----     -Le montant total est calculé selon le nombre de nuits réservées.
----     -Des frais de nettoyage s’appliquent à un taux de 20$ par personne par nuit, pour les
---          deux premières nuits.
----     -Pour chaque nuit supplémentaire, ces frais de nettoyage diminuent de 2$ par personne
---          par nuit, jusqu’à un minimum de 5$.
+---     -Le montant total est calculï¿½ selon le nombre de nuits rï¿½servï¿½es.
+---     -Des frais de nettoyage sï¿½appliquent ï¿½ un taux de 20$ par personne par nuit, pour les
+--          deux premiï¿½res nuits.
+---     -Pour chaque nuit supplï¿½mentaire, ces frais de nettoyage diminuent de 2$ par personne
+--          par nuit, jusquï¿½ï¿½ un minimum de 5$.
 
 CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
     i_id_annonce IN cnc.annonces.annonceid%TYPE,
@@ -72,7 +75,7 @@ BEGIN
     interval_jour := i_date_fin - i_date_debut;
     
     if interval_jour < 0 then
-        RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas être antérieure à la date de début.');
+        RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas ï¿½tre antï¿½rieure ï¿½ la date de dï¿½but.');
     end if;
 
     FOR i IN 1..interval_jour LOOP
@@ -98,9 +101,9 @@ BEGIN
 END CALCULER_TOTAL_FCT;
 
 --Q4_OBTENIR_MESSAGE_HISTORIQUE
---Cette fonction renvoie l’ensemble des messages échangés entre deux utilisateurs dans un
+--Cette fonction renvoie lï¿½ensemble des messages ï¿½changï¿½s entre deux utilisateurs dans un
 --tableau.
---Les messages doivent-être stockés en ordre chronologique dans un tableau de type VARRAY.
+--Les messages doivent-ï¿½tre stockï¿½s en ordre chronologique dans un tableau de type VARRAY.
 
 CREATE OR REPLACE TYPE t_message_varray AS OBJECT(
     MessageID NUMBER,
@@ -143,8 +146,8 @@ END OBTENIR_MESSAGE_HISTORIQUE_FCT;
 // PROCEDURE STOCKER
 
 --Q5_SUPPRIMER_ANNONCE
---Cette fonction doit supprimer l’annonce dont l’ID est passé en paramètre.
---Vous devez également supprimer les réservations, les commentaires et les photos associées à
+--Cette fonction doit supprimer lï¿½annonce dont lï¿½ID est passï¿½ en paramï¿½tre.
+--Vous devez ï¿½galement supprimer les rï¿½servations, les commentaires et les photos associï¿½es ï¿½
 --cette annonce.
 
 CREATE OR REPLACE PROCEDURE SUPPRIMER_ANNONCE_PRC(in_annonceid IN cnc.annonces.annonceid%TYPE)
@@ -162,7 +165,7 @@ BEGIN
     
     COMMIT;
     
-    DBMS_OUTPUT.PUT_LINE('Annonce supprimée avec succès.');
+    DBMS_OUTPUT.PUT_LINE('Annonce supprimï¿½e avec succï¿½s.');
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
@@ -170,14 +173,14 @@ EXCEPTION
 END SUPPRIMER_ANNONCE_PRC;
 
 --Q6_RESERVER
---Cette procédure prend en paramètre l’id d’une annonce, une date de début, une date de fin
---ainsi qu’un nombre de personnes.
---Elle utilise la fonction Q2_ANNONCE_EST_DISPONIBLE afin de valider que l’endroit est
+--Cette procï¿½dure prend en paramï¿½tre lï¿½id dï¿½une annonce, une date de dï¿½but, une date de fin
+--ainsi quï¿½un nombre de personnes.
+--Elle utilise la fonction Q2_ANNONCE_EST_DISPONIBLE afin de valider que lï¿½endroit est
 --disponible selon les dates fournies.
---Si aucune autre réservation n’entre en conflit avec les dates demandées, elle crée une
---réservation dans la base de données.
---Le montant total de la réservation doit-être calculé via la fonction Q3_CALCULER_TOTAL.
---Le statut de la réservation doit-être ‘En attente’.
+--Si aucune autre rï¿½servation nï¿½entre en conflit avec les dates demandï¿½es, elle crï¿½e une
+--rï¿½servation dans la base de donnï¿½es.
+--Le montant total de la rï¿½servation doit-ï¿½tre calculï¿½ via la fonction Q3_CALCULER_TOTAL.
+--Le statut de la rï¿½servation doit-ï¿½tre ï¿½En attenteï¿½.
 
 
 CREATE OR REPLACE PROCEDURE RESERVER_PRC(
@@ -199,25 +202,25 @@ BEGIN
         INSERT INTO cnc.reservations (reservationid, utilisateurid, annonceid, datedebut, datefin, statut, montanttotal) 
         VALUES ((select max(reservationid) from cnc.reservations) + 1, null, i_annonceid, i_date_debut, i_date_fin, 'en attente', rec_prix);
         
-        DBMS_OUTPUT.PUT_LINE('Réservation enregistrée!');
+        DBMS_OUTPUT.PUT_LINE('Rï¿½servation enregistrï¿½e!');
     ELSE
-        DBMS_OUTPUT.PUT_LINE('Les dates rentrent en conflit avec une autre réservation.');
+        DBMS_OUTPUT.PUT_LINE('Les dates rentrent en conflit avec une autre rï¿½servation.');
     END IF;
     
     COMMIT;
 EXCEPTION
     WHEN OTHERS THEN
         ROLLBACK;
-        DBMS_OUTPUT.PUT_LINE('Erreur lors de la réservation: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Erreur lors de la rï¿½servation: ' || SQLERRM);
 END RESERVER_PRC;
 
 --Q7_AFFICHER_CONVERSATION
---Cette procédure utilise la fonction Q4_OBTENIR_MESSAGE_HISTORIQUE afin d’afficher les
---messages échangés entre deux utilisateurs dans la console.
---On doit pouvoir visualiser les messages échangés en ordre avec la date de leur envoi comme
---dans un système de messagerie.
---Si aucun message n'est trouvé entre les deux utilisateurs, la procédure affiche un message
---indiquant qu'aucune conversation n'a été trouvée.
+--Cette procï¿½dure utilise la fonction Q4_OBTENIR_MESSAGE_HISTORIQUE afin dï¿½afficher les
+--messages ï¿½changï¿½s entre deux utilisateurs dans la console.
+--On doit pouvoir visualiser les messages ï¿½changï¿½s en ordre avec la date de leur envoi comme
+--dans un systï¿½me de messagerie.
+--Si aucun message n'est trouvï¿½ entre les deux utilisateurs, la procï¿½dure affiche un message
+--indiquant qu'aucune conversation n'a ï¿½tï¿½ trouvï¿½e.
 CREATE OR REPLACE PROCEDURE AFFICHER_CONVERSATION_PRC(
     p_user1id IN NUMBER,
     p_user2id IN NUMBER
@@ -226,11 +229,11 @@ CREATE OR REPLACE PROCEDURE AFFICHER_CONVERSATION_PRC(
 BEGIN
     v_Messages := OBTENIR_MESSAGE_HISTORIQUE_FCT(p_user1id, p_user2id);
     IF v_Messages.COUNT = 0 THEN
-        DBMS_OUTPUT.PUT_LINE('Aucune conversation trouvée entre les utilisateurs spécifiés.');
+        DBMS_OUTPUT.PUT_LINE('Aucune conversation trouvï¿½e entre les utilisateurs spï¿½cifiï¿½s.');
     ELSE
-    DBMS_OUTPUT.PUT_LINE('Messages échangés entre les utilisateurs ' || p_user1id || ' et ' || p_user2id || ':');
+    DBMS_OUTPUT.PUT_LINE('Messages ï¿½changï¿½s entre les utilisateurs ' || p_user1id || ' et ' || p_user2id || ':');
         FOR i IN 1..v_Messages.COUNT LOOP
-            DBMS_OUTPUT.PUT_LINE('Message ' || i || ' envoyé par ' || v_Messages(i).ExpediteurUtilisateurID || ':');
+            DBMS_OUTPUT.PUT_LINE('Message ' || i || ' envoyï¿½ par ' || v_Messages(i).ExpediteurUtilisateurID || ':');
             DBMS_OUTPUT.PUT_LINE('  Contenu: ' || v_Messages(i).Contenu);
             DBMS_OUTPUT.PUT_LINE('  Date: ' || TO_CHAR(v_Messages(i).DateEnvoi, 'DD-MM-YYYY HH24:MI:SS'));
             DBMS_OUTPUT.PUT_LINE('---------------------------------------');
@@ -239,11 +242,11 @@ BEGIN
 END AFFICHER_CONVERSATION_PRC;
 
 --Q8_REVENUS_PAR_LOCALISATION
---Cette procédure stocke les revenus générés dans chaque localisation dans un tableau
---associatif (dictionnaire). Elle itère ensuite ce dictionnaire et affiche son contenu.
+--Cette procï¿½dure stocke les revenus gï¿½nï¿½rï¿½s dans chaque localisation dans un tableau
+--associatif (dictionnaire). Elle itï¿½re ensuite ce dictionnaire et affiche son contenu.
 --Exemple :
---Québec : 10 000$
---Trois-Rivières : 8500$
+--Quï¿½bec : 10 000$
+--Trois-Riviï¿½res : 8500$
 
 CREATE OR REPLACE PROCEDURE REVENUS_PAR_LOCALISATION_PRC (p_tableau OUT t_tableau_revenus) IS
 TYPE t_tableau_revenus IS TABLE OF NUMBER INDEX BY VARCHAR2(200);
@@ -252,7 +255,7 @@ BEGIN
     FOR i IN (
         SELECT a.LOCALISATION, SUM(r.MONTANTTOTAL) AS TOTAL 
         FROM ANNONCES a JOIN RESERVATIONS r ON r.ANNONCEID = a.ANNONCEID 
-        WHERE r.STATUT = 'confirmée' 
+        WHERE r.STATUT = 'confirmï¿½e' 
         GROUP BY a.Localisation)
     LOOP
         p_tableau(rec.Localisation) := rec.Total;
@@ -261,9 +264,9 @@ BEGIN
 END REVENUS_PAR_LOCALISATION_PRC;
 
 --Q9_RESERVATION_PAR_USAGER_PAR_ANNONCE
---Cette procédure doit générer dans la console un rapport qui affiche, pour chaque annonce, la
---liste des utilisateurs ayant réservé cette annonce ainsi que les informations de leurs
---réservations.
+--Cette procï¿½dure doit gï¿½nï¿½rer dans la console un rapport qui affiche, pour chaque annonce, la
+--liste des utilisateurs ayant rï¿½servï¿½ cette annonce ainsi que les informations de leurs
+--rï¿½servations.
 
 CREATE OR REPLACE PROCEDURE RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC
 IS
@@ -295,10 +298,10 @@ BEGIN
                         AND r.utilisateurid = u.utilisateurid
                       ORDER BY r.reservationid)
             LOOP
-                -- Bloc pour les informations de la réservation
+                -- Bloc pour les informations de la rï¿½servation
                 DBMS_OUTPUT.PUT_LINE(
                     '       Reservation ID: ' || r.reservationid ||
-                    ', Date début: ' || TO_CHAR(r.datedebut, 'DD-MM-YYYY') ||
+                    ', Date dï¿½but: ' || TO_CHAR(r.datedebut, 'DD-MM-YYYY') ||
                     ', Date fin: ' || TO_CHAR(r.datefin, 'DD-MM-YYYY')
                 );
             END LOOP;
@@ -311,21 +314,21 @@ END RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 exec RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 
 
--- Spécification du package
+-- Spï¿½cification du package
 CREATE OR REPLACE PACKAGE TRAITEMENTS_CNC_PKG AS
-    -- Fonction pour vérifier si un utilisateur existe
+    -- Fonction pour vï¿½rifier si un utilisateur existe
     FUNCTION utilisateur_existe(
         i_num_user IN cnc.utilisateurs.utilisateurid%TYPE
     ) RETURN BOOLEAN;
     
-    -- Fonction pour vérifier si une annonce est disponible
+    -- Fonction pour vï¿½rifier si une annonce est disponible
     FUNCTION annonce_disponible(
         i_annonce IN cnc.annonces.annonceid%TYPE, 
         i_date_debut IN cnc.reservations.datedebut%TYPE, 
         i_date_fin IN cnc.reservations.datefin%TYPE
     ) RETURN BOOLEAN;
     
-    -- Fonction pour calculer le montant total d'une réservation
+    -- Fonction pour calculer le montant total d'une rï¿½servation
     FUNCTION calculer_total(
         i_id_annonce IN cnc.annonces.annonceid%TYPE,
         i_date_debut IN DATE,
@@ -339,12 +342,12 @@ CREATE OR REPLACE PACKAGE TRAITEMENTS_CNC_PKG AS
         i_user2 IN cnc.utilisateurs.utilisateurid%TYPE
     ) RETURN t_historique_message_varray;
     
-    -- Procédure pour supprimer une annonce avec ses réservations associées
+    -- Procï¿½dure pour supprimer une annonce avec ses rï¿½servations associï¿½es
     PROCEDURE supprimer_annonce(
         in_annonceid IN cnc.annonces.annonceid%TYPE
     );
     
-    -- Procédure pour effectuer une réservation
+    -- Procï¿½dure pour effectuer une rï¿½servation
     PROCEDURE reserver(
         i_annonceid IN cnc.annonces.annonceid%TYPE, 
         i_date_debut IN DATE, 
@@ -352,18 +355,18 @@ CREATE OR REPLACE PACKAGE TRAITEMENTS_CNC_PKG AS
         i_nombre IN INT
     );
     
-    -- Procédure pour afficher l'historique des messages entre deux utilisateurs
+    -- Procï¿½dure pour afficher l'historique des messages entre deux utilisateurs
     PROCEDURE afficher_conversation(
         p_user1id IN NUMBER,
         p_user2id IN NUMBER
     );
     
-    -- Procédure pour stocker les revenus générés par localisation
+    -- Procï¿½dure pour stocker les revenus gï¿½nï¿½rï¿½s par localisation
 --    PROCEDURE revenus_par_localisation(
 --        p_tableau OUT t_tableau_revenus
 --    );
     
-    -- Procédure pour afficher les réservations par utilisateur et par annonce
+    -- Procï¿½dure pour afficher les rï¿½servations par utilisateur et par annonce
     PROCEDURE reservation_par_usager_par_annonce;
 END TRAITEMENTS_CNC_PKG;
 
