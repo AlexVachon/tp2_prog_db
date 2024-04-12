@@ -205,18 +205,26 @@ END OBTENIR_MESSAGE_HISTORIQUE_FCT;
 --Vous devez ï¿½galement supprimer les rï¿½servations, les commentaires et les photos associï¿½es ï¿½
 --cette annonce.
 
-CREATE OR REPLACE PROCEDURE SUPPRIMER_ANNONCE_PRC(in_annonceid IN cnc.annonces.annonceid%TYPE)
+CREATE OR REPLACE PROCEDURE SUPPRIMER_ANNONCE_PRC(i_annonceid IN cnc.annonces.annonceid%TYPE)
 IS
 BEGIN
-    DELETE FROM cnc.reservations r WHERE r.annonceid = in_annonceid;
+    IF i_annonceid <= 0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Vous ne pouvez utiliser de nombre nÃ©gatifs dans les paramÃ¨tres.');
+    END IF;
     
-    DELETE FROM cnc.commentaires c WHERE c.annonceid = in_annonceid;
+    IF i_annonceid is null then
+        RAISE_APPLICATION_ERROR(-20003, 'Les paramètres ne peuvent pas être nuls.');
+    END IF;
+
+    DELETE FROM cnc.reservations r WHERE r.annonceid = i_annonceid;
     
-    DELETE FROM cnc.utilisateurs_annonces u WHERE u.annonceid = in_annonceid;
+    DELETE FROM cnc.commentaires c WHERE c.annonceid = i_annonceid;
     
-    DELETE FROM cnc.photos p where p.annonceid = in_annonceid;
+    DELETE FROM cnc.utilisateurs_annonces u WHERE u.annonceid = i_annonceid;
     
-    DELETE FROM cnc.annonces a WHERE a.annonceid = in_annonceid; 
+    DELETE FROM cnc.photos p where p.annonceid = i_annonceid;
+    
+    DELETE FROM cnc.annonces a WHERE a.annonceid = i_annonceid; 
     
     COMMIT;
     
@@ -248,6 +256,14 @@ IS
     rec_disponible BOOLEAN;
     rec_prix NUMBER;
 BEGIN
+    IF i_nombre is null then
+        RAISE_APPLICATION_ERROR(-20003, 'Les paramètres ne peuvent pas être nuls.');
+    END IF;
+    
+    IF i_nombre <= 0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Vous ne pouvez utiliser de nombre nÃ©gatifs dans les paramÃ¨tres.');
+    END IF;
+    
     rec_disponible := ANNONCE_DISPONIBLE_FCT(i_annonceid, i_date_debut, i_date_fin);
     
     IF rec_disponible THEN
@@ -294,6 +310,10 @@ BEGIN
             DBMS_OUTPUT.PUT_LINE('---------------------------------------');
         END LOOP;
     END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur dans AFFICHER_CONVERSATION_PRC: '|| SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Aucun conversation trouvée...');
 END AFFICHER_CONVERSATION_PRC;
 
 --Q8_REVENUS_PAR_LOCALISATION
@@ -363,6 +383,9 @@ BEGIN
             DBMS_OUTPUT.PUT_LINE('');
         END LOOP;
     END LOOP;
+EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur dans RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC: ' || SQLERRM);
 END RESERVATION_PAR_USAGER_PAR_ANNONCE_PRC;
 
 
@@ -589,7 +612,7 @@ END TRAITEMENTS_CNC_PKG;
 --end;
 
 --Q8
-
+-- TODO!!!
 
 --Q9
 --begin
