@@ -323,21 +323,24 @@ END AFFICHER_CONVERSATION_PRC;
 --Quï¿½bec : 10 000$
 --Trois-Riviï¿½res : 8500$
 
-CREATE OR REPLACE PROCEDURE REVENUS_PAR_LOCALISATION_PRC (p_tableau OUT t_tableau_revenus) IS
+CREATE OR REPLACE PROCEDURE REVENUS_PAR_LOCALISATION_PRC 
+IS
 TYPE t_tableau_revenus IS TABLE OF NUMBER INDEX BY VARCHAR2(200);
+    p_tableau t_tableau_revenus;
 BEGIN
     p_tableau := t_tableau_revenus();
     FOR i IN (
         SELECT a.LOCALISATION, SUM(r.MONTANTTOTAL) AS TOTAL 
         FROM ANNONCES a JOIN RESERVATIONS r ON r.ANNONCEID = a.ANNONCEID 
-        WHERE r.STATUT = 'confirmï¿½e' 
+        WHERE r.STATUT = 'confirmée' 
         GROUP BY a.Localisation)
     LOOP
-        p_tableau(rec.Localisation) := rec.Total;
-        DBMS_OUTPUT.PUT_LINE('rec.Localisation' || ' : ' || rec.Total || '$');
+        p_tableau(i.Localisation) := i.Total;
+        DBMS_OUTPUT.PUT_LINE(i.Localisation || ' : ' || i.Total || '$');
     END LOOP;
 END REVENUS_PAR_LOCALISATION_PRC;
 
+EXEC REVENUS_PAR_LOCALISATION_PRC;
 --Q9_RESERVATION_PAR_USAGER_PAR_ANNONCE
 --Cette procï¿½dure doit gï¿½nï¿½rer dans la console un rapport qui affiche, pour chaque annonce, la
 --liste des utilisateurs ayant rï¿½servï¿½ cette annonce ainsi que les informations de leurs
