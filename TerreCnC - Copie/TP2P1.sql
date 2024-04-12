@@ -338,9 +338,12 @@ BEGIN
         p_tableau(i.Localisation) := i.Total;
         DBMS_OUTPUT.PUT_LINE(i.Localisation || ' : ' || i.Total || '$');
     END LOOP;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('ERREUR: ' || SQLERRM);
 END REVENUS_PAR_LOCALISATION_PRC;
 
-EXEC REVENUS_PAR_LOCALISATION_PRC;
+
 --Q9_RESERVATION_PAR_USAGER_PAR_ANNONCE
 --Cette proc�dure doit g�n�rer dans la console un rapport qui affiche, pour chaque annonce, la
 --liste des utilisateurs ayant r�serv� cette annonce ainsi que les informations de leurs
