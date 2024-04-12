@@ -10,8 +10,8 @@ CREATE OR REPLACE FUNCTION UTILISATEUR_EXISTE_FCT(i_num_user IN cnc.utilisateurs
 RETURN BOOLEAN IS 
     rec_count INTEGER;
 BEGIN
-    IF i_num_user <=0 THEN
-        RAISE_APPLICATION_ERROR(-20002, 'ID ne peut être égale à 0 ou négatif.');
+    IF i_num_user <=0 or i_num_user is NULL THEN
+        RAISE_APPLICATION_ERROR(-20002, 'ID ne peut être égale à 0, négatif ou null.');
     END IF;
     
     SELECT COUNT(*) INTO rec_count 
@@ -22,7 +22,7 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20000, 'ID ne correspond à aucune donnée.');
     END IF;
 
-    RETURN rec_count > 0;
+    RETURN true;
     
 EXCEPTION
     WHEN OTHERS THEN
@@ -42,9 +42,18 @@ i_date_debut in cnc.reservations.datedebut%type,
 i_date_fin in cnc.reservations.datefin%type)
 RETURN BOOLEAN is rec_count INT;
 BEGIN
-    IF(i_date_debut > i_date_fin) THEN
-        RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas ï¿½tre antï¿½rieure ï¿½ la date de dï¿½but.');
+    IF i_annonce IS NULL OR i_date_debut IS NULL OR i_date_fin IS NULL THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Les paramètres ne peuvent pas être nuls.');
     END IF;
+
+    IF i_annonce <= 0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'L''identifiant de l''annonce ne peut pas être égal à 0 ou négatif.');
+    END IF;
+
+    IF i_date_debut > i_date_fin THEN
+        RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas être antérieure à la date de début.');
+    END IF;
+    
     select count(
         a.ANNONCEID
         )
@@ -52,8 +61,17 @@ BEGIN
     where a.ANNONCEID = i_annonce
     and (i_date_debut between r.DATEDEBUT and r.DATEFIN
         or i_date_fin between r.DATEDEBUT and r.DATEFIN);
-    return rec_count = 0;
-        
+    
+    IF rec_count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20000, 'ID ne correspond à aucune donnée.');
+    END IF;
+    
+    return true;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur dans ANNONCE_DISPONIBLE_FCT : ' || SQLERRM);
+        RETURN FALSE;
 END ANNONCE_DISPONIBLE_FCT;
 
 --Q3_CALCULER_TOTAL
@@ -79,16 +97,22 @@ CREATE OR REPLACE FUNCTION CALCULER_TOTAL_FCT (
     frais_nettoyage NUMBER := 20;
     i NUMBER;
 BEGIN
+
+    IF i_id_annonce is null or i_date_debut is null or i_date_fin is null or i_nombre is null then
+        RAISE_APPLICATION_ERROR(-20003, 'Les paramètres ne peuvent pas être nuls.');
+    END IF;
+    
     IF i_nombre <= 0 OR i_id_annonce <= 0 THEN
         RAISE_APPLICATION_ERROR(-20002, 'Vous ne pouvez utiliser de nombre nÃ©gatifs dans les paramÃ¨tres.');
     END IF;
+    
     SELECT a.prixparnuit INTO prix_par_nuit FROM cnc.annonces a WHERE a.annonceid = i_id_annonce;
 
     interval_jour := i_date_fin - i_date_debut;
     
-    if interval_jour < 0 then
+    IF interval_jour < 0 THEN
         RAISE_APPLICATION_ERROR(-20001, 'La date de fin ne peut pas ï¿½tre antï¿½rieure ï¿½ la date de dï¿½but.');
-    end if;
+    END IF;
 
     FOR i IN 1..interval_jour LOOP
         prix_total := prix_total + prix_par_nuit + (frais_nettoyage * i_nombre);
@@ -105,7 +129,7 @@ BEGIN
     
     EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        DBMS_OUTPUT.PUT_LINE(sqlerrm);
+        DBMS_OUTPUT.PUT_LINE('Erreur, ID ne correspond à aucun annonce: ' || SQLERRM);
         RETURN 0;
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Erreur: ' || SQLERRM);
@@ -132,6 +156,18 @@ i_user1 in cnc.utilisateurs.utilisateurid%type,
 i_user2 in cnc.utilisateurs.utilisateurid%type)
 RETURN t_historique_message_varray IS v_Messages t_historique_message_varray := t_historique_message_varray();
 BEGIN
+    IF i_user1 is null or i_user2 is null THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Les paramètres ne peuvent pas être nuls.');
+    END IF;
+    
+    IF i_user1 <= 0 or i_user2 <=0 THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Vous ne pouvez utiliser de nombre nÃ©gatifs dans les paramÃ¨tres.');
+    END IF;
+    
+    IF i_user1 = i_user2 THEN
+        RAISE_APPLICATION_ERROR(-20004, 'Vous ne pouvez founir les mêmes ID en paramètre.');
+    END IF;
+    
     FOR msg IN(
         SELECT 
             MESSAGEID ,
@@ -153,6 +189,13 @@ BEGIN
             msg.DateEnvoi);
     END LOOP;
     RETURN v_Messages;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur, au moins un ID ne correspond à rien dans les données: ' || SQLERRM);
+        RETURN NULL;
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Erreur: ' || SQLERRM);
+    RETURN NULL;
 END OBTENIR_MESSAGE_HISTORIQUE_FCT;
 
 // PROCEDURE STOCKER
@@ -430,18 +473,23 @@ CREATE OR REPLACE PACKAGE BODY TRAITEMENTS_CNC_PKG AS
         i_user1 IN cnc.utilisateurs.utilisateurid%TYPE, 
         i_user2 IN cnc.utilisateurs.utilisateurid%TYPE
     ) RETURN t_historique_message_varray AS 
-        v_Messages t_historique_message_varray;
+        v_Messages t_historique_message_varray := NULL;
     BEGIN
         v_Messages := OBTENIR_MESSAGE_HISTORIQUE_FCT(i_user1, i_user2);
-        FOR i IN 1..v_Messages.COUNT LOOP
-            DBMS_OUTPUT.PUT_LINE('Message ' || i || ':');
-            DBMS_OUTPUT.PUT_LINE('   MessageID: ' || v_Messages(i).MessageID);
-            DBMS_OUTPUT.PUT_LINE('   ExpediteurUtilisateurID: ' || v_Messages(i).ExpediteurUtilisateurID);
-            DBMS_OUTPUT.PUT_LINE('   DestinataireUtilisateurID: ' || v_Messages(i).DestinataireUtilisateurID);
-            DBMS_OUTPUT.PUT_LINE('   Contenu: ' || v_Messages(i).Contenu);
-            DBMS_OUTPUT.PUT_LINE('   DateEnvoi: ' || TO_CHAR(v_Messages(i).DateEnvoi, 'DD-MM-YYYY HH24:MI:SS'));
-            DBMS_OUTPUT.PUT_LINE('---------------------------------------');
-        END LOOP;
+        
+        IF v_Messages is not null then
+            FOR i IN 1..v_Messages.COUNT LOOP
+                DBMS_OUTPUT.PUT_LINE('Message ' || i || ':');
+                DBMS_OUTPUT.PUT_LINE('   MessageID: ' || v_Messages(i).MessageID);
+                DBMS_OUTPUT.PUT_LINE('   ExpediteurUtilisateurID: ' || v_Messages(i).ExpediteurUtilisateurID);
+                DBMS_OUTPUT.PUT_LINE('   DestinataireUtilisateurID: ' || v_Messages(i).DestinataireUtilisateurID);
+                DBMS_OUTPUT.PUT_LINE('   Contenu: ' || v_Messages(i).Contenu);
+                DBMS_OUTPUT.PUT_LINE('   DateEnvoi: ' || TO_CHAR(v_Messages(i).DateEnvoi, 'DD-MM-YYYY HH24:MI:SS'));
+                DBMS_OUTPUT.PUT_LINE('---------------------------------------');
+            END LOOP;
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Aucun message trouvé.');
+        END IF;
         RETURN v_Messages;
     END obtenir_message_historique;
     
@@ -511,11 +559,12 @@ END TRAITEMENTS_CNC_PKG;
 --END;
 
 --Q4
---declare
---    v_Message t_historique_message_varray;
---begin
+--DECLARE
+--    v_Message t_historique_message_varray := NULL;
+--
+--BEGIN
 --    v_Message := TRAITEMENTS_CNC_PKG.obtenir_message_historique(1, 2);
---end;
+--END;
 
 --Q5
 --begin
