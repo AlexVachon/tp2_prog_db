@@ -443,9 +443,7 @@ CREATE OR REPLACE PACKAGE TRAITEMENTS_CNC_PKG AS
     );
     
     -- Proc�dure pour stocker les revenus g�n�r�s par localisation
---    PROCEDURE revenus_par_localisation(
---        p_tableau OUT t_tableau_revenus
---    );
+    PROCEDURE  revenus_par_localisation;
     
     -- Proc�dure pour afficher les r�servations par utilisateur et par annonce
     PROCEDURE reservation_par_usager_par_annonce;
@@ -547,12 +545,10 @@ CREATE OR REPLACE PACKAGE BODY TRAITEMENTS_CNC_PKG AS
         AFFICHER_CONVERSATION_PRC(p_user1id, p_user2id);
     END afficher_conversation;
     
---    PROCEDURE revenus_par_localisation(
---        p_tableau OUT t_tableau_revenus
---    ) AS
---    BEGIN
---        REVENUS_PAR_LOCALISATION_PRC(p_tableau);
---    END revenus_par_localisation;
+    PROCEDURE revenus_par_localisation AS
+    BEGIN
+        REVENUS_PAR_LOCALISATION_PRC;
+    END revenus_par_localisation;
     
     PROCEDURE reservation_par_usager_par_annonce AS
     BEGIN
@@ -618,7 +614,9 @@ END TRAITEMENTS_CNC_PKG;
 --end;
 
 --Q8
--- TODO!!!
+--begin
+--    cnc.TRAITEMENTS_CNC_PKG.revenus_par_localisation();
+--END;
 
 --Q9
 --begin
